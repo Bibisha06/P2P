@@ -78,8 +78,8 @@ export default function MeshGraph({
 
     const simulation = simRef.current;
 
-    
-    const allPeerIds = [myId, ...connectedPeers];
+    // Include dying peers so D3 can still find them if old edges reference them
+    const allPeerIds = Array.from(new Set([myId, ...connectedPeers, ...dyingPeers]));
     const prevNodes = prevNodesRef.current;
     const currentNodes = new Set(allPeerIds);
 
