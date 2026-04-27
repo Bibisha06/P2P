@@ -32,7 +32,7 @@ wss.on('connection', (ws) => {
     ws.on('message', (raw) => {
         try {
             const data = JSON.parse(raw);
-
+            console.log(`[>>] Msg from ${id}: type=${data.type} target=${data.target}`);
             
             if (data.target && peers.has(data.target)) {
                 const envelope = { ...data, from: id };
