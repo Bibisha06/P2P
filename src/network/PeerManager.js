@@ -142,6 +142,14 @@ export class PeerManager {
 
     try {
       await peer.pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+      
+      if (peer.iceQueue) {
+        for (const candidate of peer.iceQueue) {
+          peer.pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.error);
+        }
+        peer.iceQueue = [];
+      }
+
       const answer = await peer.pc.createAnswer();
       await peer.pc.setLocalDescription(answer);
       this.signaling.send({
@@ -159,6 +167,13 @@ export class PeerManager {
     if (peer) {
       try {
         await peer.pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+        
+        if (peer.iceQueue) {
+          for (const candidate of peer.iceQueue) {
+            peer.pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.error);
+          }
+          peer.iceQueue = [];
+        }
       } catch (err) {
         console.error(`[PeerManager] Set answer failed for ${data.from}:`, err);
       }
@@ -168,7 +183,14 @@ export class PeerManager {
   _onIceCandidate(data) {
     const peer = this.peers.get(data.from);
     if (peer) {
-      peer.pc.addIceCandidate(new RTCIceCandidate(data.candidate)).catch(() => {});
+      if (peer.pc.remoteDescription && peer.pc.remoteDescription.type) {
+        peer.pc.addIceCandidate(new RTCIceCandidate(data.candidate)).catch((err) => {
+          console.error(`[PeerManager] Dropped ICE candidate from ${data.from}:`, err);
+        });
+      } else {
+        peer.iceQueue = peer.iceQueue || [];
+        peer.iceQueue.push(data.candidate);
+      }
     }
   }
 
